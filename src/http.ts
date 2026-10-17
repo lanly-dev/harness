@@ -134,13 +134,9 @@ export class HarnessHttpClient {
     }
   }
 
-  private async getNodeFetch(): Promise<typeof import('node-fetch').default> {
-    let fetchModule: typeof import('node-fetch') | undefined;
-    if (!fetchModule) {
-      const nf = await import('node-fetch');
-      fetchModule = nf;
-    }
-    return fetchModule!.default;
+  private async getNodeFetch() {
+    const nf = await import('node-fetch');
+    return nf.default;
   }
 }
 
