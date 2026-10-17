@@ -1,9 +1,8 @@
 {
   "name": "harness-client",
-  "displayName": "Harness Client",
-  "description": "VS Code extension for connecting to a local Harness instance (OpenAI-compatible, works offline).",
+  "displayName": "DeepSeek Harness",
+  "description": "Use DeepSeek Harness from VS Code Chat through its managed SDK runtime.",
   "version": "0.1.0",
-
   "engines": {
     "vscode": "^1.103.0"
   },
@@ -15,40 +14,50 @@
   "main": "./dist/extension.js",
   "contributes": {
     "configuration": {
-      "title": "Harness",
+      "title": "DeepSeek Harness",
       "properties": {
-        "harness.url": {
+        "deepseekHarness.provider": {
           "type": "string",
-          "default": "http://localhost:3080",
-          "description": "URL of the local Harness server (OpenAI-compatible API endpoint)."
+          "default": "deepseek-official",
+          "description": "DeepSeek Harness provider route."
         },
-        "harness.model": {
+        "deepseekHarness.model": {
           "type": "string",
-          "default": "deepseek-chat",
-          "description": "Default model to use when no model is selected."
+          "default": "deepseek-v4-flash",
+          "description": "Model ID used by DeepSeek Harness."
+        },
+        "deepseekHarness.baseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Optional Messages-compatible API base URL."
         }
       }
     },
     "languageModelChatProviders": [
       {
         "vendor": "harness",
-        "displayName": "Harness (Local)",
+        "displayName": "DeepSeek Harness",
         "id": "harness",
-        "description": "Custom chat model provider for a local Harness instance.",
+        "description": "Chat through the DeepSeek Harness SDK runtime.",
         "enabled": true
       }
     ],
     "commands": [
       {
         "command": "harness.configureProvider",
-        "title": "Harness: Configure Provider URL",
+        "title": "DeepSeek Harness: Configure Provider",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.configureModel",
+        "title": "DeepSeek Harness: Configure Model",
         "category": "Harness"
       },
       {
         "command": "harness.configureApiKey",
-        "title": "Harness: Configure API Key",
+        "title": "DeepSeek Harness: Configure API Key",
         "category": "Harness",
-        "description": "API key configuration is not supported in this version."
+        "description": "Store or clear the DeepSeek API key securely."
       }
     ]
   },
@@ -65,14 +74,15 @@
   "devDependencies": {
     "@types/node": "24.x",
     "@types/vscode": "^1.103.0",
-    "typescript-eslint": "^8.61.1",
-    "eslint": "^10.5.0",
     "esbuild": "^0.28.1",
+    "eslint": "^10.5.0",
     "npm-run-all": "^4.1.5",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.61.1"
   },
   "dependencies": {
-    "node-fetch": "^3.3.2"
+    "@deepseek-ai/dsh-subprocess": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-sdk-client": "0.2.1-rc.2"
   },
   "overrides": {
     "diff": "^8.0.4",

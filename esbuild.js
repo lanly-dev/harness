@@ -35,7 +35,7 @@ async function main() {
 		sourcesContent: false,
 		platform: 'node',
 		outdir: 'dist',
-		external: ['vscode'],
+		external: ['vscode', '@deepseek-ai/dsh-sdk-client', '@deepseek-ai/dsh-subprocess'],
 		logLevel: 'silent',
 		plugins: [
 			/* add to the end of plugins array */

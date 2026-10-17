@@ -5,8 +5,9 @@ export class HarnessSettings {
   static getConfig(): HarnessConfig {
     const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
     return {
-      url: config.get<string>('url', DEFAULT_CONFIG.url),
+      provider: config.get<string>('provider', DEFAULT_CONFIG.provider),
       model: config.get<string>('model', DEFAULT_CONFIG.model),
+      baseUrl: config.get<string>('baseUrl', DEFAULT_CONFIG.baseUrl),
     };
   }
 
@@ -14,29 +15,18 @@ export class HarnessSettings {
     const current = HarnessSettings.getConfig();
     const updated = { ...current, ...config };
     const vscodeConfig = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    await vscodeConfig.update('url', updated.url, true);
-    await vscodeConfig.update('model', updated.model, true);
+    for (const key of Object.keys(config) as Array<keyof HarnessConfig>) {
+      await vscodeConfig.update(key, updated[key], true);
+    }
     vscode.window.showInformationMessage('DeepSeek Harness settings saved.');
-  }
-
-  static async promptForApiKey(): Promise<string | undefined> {
-    throw new Error('API key is not supported. This extension does not use API keys.');
   }
 
   static async validateConfig(): Promise<boolean> {
     const config = HarnessSettings.getConfig();
-    if (!config.url) {
-      vscode.window.showErrorMessage('DeepSeek Harness URL is not configured.');
+    if (!config.provider || !config.model) {
+      vscode.window.showErrorMessage('DeepSeek Harness provider and model must be configured.');
       return false;
     }
     return true;
-  }
-
-  static getConfigSection(): vscode.ConfigurationTarget {
-    return {
-      section: CONFIG_SECTION,
-      scope: vscode.ConfigurationTarget.Workspace,
-      scopeId: 'workspace',
-    } as unknown as vscode.ConfigurationTarget;
   }
 }

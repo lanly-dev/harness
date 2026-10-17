@@ -1,79 +1,93 @@
 import * as vscode from 'vscode';
-import { HarnessConfig, HarnessModel, HarnessChatRequest } from './types.js';
+import { CONFIG_SECTION } from './types.js';
 import { HarnessSettings } from './config.js';
 import { HarnessProvider } from './provider.js';
-import { HarnessHttpClient } from './http.js';
+import { HarnessRuntime } from './runtime.js';
+
+const API_KEY_SECRET = 'deepseekHarness.apiKey';
+let activeRuntime: HarnessRuntime | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
   console.log('Activating Harness Provider...');
 
-  // Get configuration
   const config = HarnessSettings.getConfig();
-
-  // Validate and prompt for API key if needed
-  HarnessSettings.validateConfig().then(async (valid: boolean) => {
-    if (!valid) {
-      await HarnessSettings.promptForApiKey();
-    }
-  });
-
-  // Create HTTP client
-  const httpClient = new HarnessHttpClient(config);
-
-  // Test connection
-  httpClient.healthCheck().then(async (healthy: boolean) => {
-    if (healthy) {
-      console.log('Connected to Harness at', config.url);
-    } else {
-      console.warn('Could not connect to Harness at', config.url);
-      vscode.window.showWarningMessage(
-        `Cannot connect to Harness at ${config.url}. ` +
-        'Please ensure the server is running.'
-      );
-    }
-  });
-
-  // Create provider
-  const provider = new HarnessProvider(config, httpClient);
-
-  // Register the provider
+  activeRuntime = new HarnessRuntime(config, () => context.secrets.get(API_KEY_SECRET));
+  const provider = new HarnessProvider(config, activeRuntime);
   const providerRegistration = vscode.lm.registerLanguageModelChatProvider('harness', provider);
 
   // Add command to configure provider
   const configureCommand = vscode.commands.registerCommand('harness.configureProvider', async () => {
     const currentConfig = HarnessSettings.getConfig();
-    const newUrl = await vscode.window.showInputBox({
-      prompt: 'Enter Harness URL',
-      placeHolder: 'http://localhost:3080',
-      value: currentConfig.url,
+    const newProvider = await vscode.window.showInputBox({
+      prompt: 'Enter a DeepSeek Harness provider ID',
+      placeHolder: 'deepseek-official',
+      value: currentConfig.provider,
     });
 
-    if (newUrl) {
-      await HarnessSettings.saveConfig({ url: newUrl });
-      // Reload provider with new config
-      const newHttpClient = new HarnessHttpClient({ ...config, url: newUrl });
-      const newProvider = new HarnessProvider({ ...config, url: newUrl }, newHttpClient);
-      vscode.lm.registerLanguageModelChatProvider('harness', newProvider);
-      vscode.window.showInformationMessage('Harness URL updated.');
+    if (newProvider?.trim()) {
+      await HarnessSettings.saveConfig({ provider: newProvider.trim() });
+      await provider.updateConfig(HarnessSettings.getConfig());
     }
   });
 
-  // Add command to configure API key - not used in this version
-  const configureKeyCommand = vscode.commands.registerCommand('harness.configureApiKey', async () => {
-    vscode.window.showInformationMessage('API key is not supported in this version.');
+  const configureModelCommand = vscode.commands.registerCommand('harness.configureModel', async () => {
+    const currentConfig = HarnessSettings.getConfig();
+    const model = await vscode.window.showInputBox({
+      prompt: 'Enter a DeepSeek Harness model ID',
+      placeHolder: 'deepseek-v4-flash',
+      value: currentConfig.model,
+    });
+
+    if (model?.trim()) {
+      await HarnessSettings.saveConfig({ model: model.trim() });
+      await provider.updateConfig(HarnessSettings.getConfig());
+    }
   });
 
-  // Register all disposables
+  const configureKeyCommand = vscode.commands.registerCommand('harness.configureApiKey', async () => {
+    const apiKey = await vscode.window.showInputBox({
+      prompt: 'Enter a DeepSeek API key (leave empty to clear the saved key)',
+      password: true,
+      ignoreFocusOut: true,
+    });
+
+    if (apiKey === undefined) {
+      return;
+    }
+
+    if (apiKey.trim()) {
+      await context.secrets.store(API_KEY_SECRET, apiKey.trim());
+    } else {
+      await context.secrets.delete(API_KEY_SECRET);
+    }
+    await provider.updateConfig(HarnessSettings.getConfig());
+    vscode.window.showInformationMessage('DeepSeek API key updated.');
+  });
+
+  const configListener = vscode.workspace.onDidChangeConfiguration(event => {
+    if (event.affectsConfiguration(CONFIG_SECTION)) {
+      void provider.updateConfig(HarnessSettings.getConfig()).catch(error => {
+        vscode.window.showErrorMessage(`Could not restart DeepSeek Harness: ${String(error)}`);
+      });
+    }
+  });
+
   context.subscriptions.push(
     providerRegistration,
     configureCommand,
-    configureKeyCommand
+    configureModelCommand,
+    configureKeyCommand,
+    configListener,
+    new vscode.Disposable(() => provider.dispose()),
+    new vscode.Disposable(() => {
+      void activeRuntime?.dispose();
+      activeRuntime = undefined;
+    }),
   );
-
-  console.log('Harness Provider activated successfully.');
 }
 
-export function deactivate(): void {
-  console.log('Harness Provider deactivated.');
+export async function deactivate(): Promise<void> {
+  await activeRuntime?.dispose();
+  activeRuntime = undefined;
 }
 
