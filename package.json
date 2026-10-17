@@ -3,7 +3,7 @@
   "displayName": "Harness Client",
   "description": "VS Code extension for connecting to a local Harness instance (OpenAI-compatible, works offline).",
   "version": "0.1.0",
-  "type": "module",
+
   "engines": {
     "vscode": "^1.103.0"
   },
