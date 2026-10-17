@@ -1,21 +1,54 @@
 {
-  "name": "harness",
-  "displayName": "harness",
-  "description": "",
-  "version": "0.0.1",
+  "name": "harness-client",
+  "displayName": "Harness Client",
+  "description": "VS Code extension for connecting to a local Harness instance (OpenAI-compatible, works offline).",
+  "version": "0.1.0",
+  "type": "module",
   "engines": {
-    "vscode": "^1.140.0"
+    "vscode": "^1.103.0"
   },
   "categories": [
-    "Other"
+    "AI",
+    "Chat"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Harness",
+      "properties": {
+        "harness.url": {
+          "type": "string",
+          "default": "http://localhost:3080",
+          "description": "URL of the local Harness server (OpenAI-compatible API endpoint)."
+        },
+        "harness.model": {
+          "type": "string",
+          "default": "deepseek-chat",
+          "description": "Default model to use when no model is selected."
+        }
+      }
+    },
+    "languageModelChatProviders": [
+      {
+        "vendor": "harness",
+        "displayName": "Harness (Local)",
+        "id": "harness",
+        "description": "Custom chat model provider for a local Harness instance.",
+        "enabled": true
+      }
+    ],
     "commands": [
       {
-        "command": "harness.helloWorld",
-        "title": "Hello World"
+        "command": "harness.configureProvider",
+        "title": "Harness: Configure Provider URL",
+        "category": "Harness"
+      },
+      {
+        "command": "harness.configureApiKey",
+        "title": "Harness: Configure API Key",
+        "category": "Harness",
+        "description": "API key configuration is not supported in this version."
       }
     ]
   },
@@ -30,13 +63,16 @@
     "lint": "eslint src"
   },
   "devDependencies": {
-    "@types/vscode": "^1.140.0",
     "@types/node": "24.x",
+    "@types/vscode": "^1.103.0",
     "typescript-eslint": "^8.61.1",
     "eslint": "^10.5.0",
     "esbuild": "^0.28.1",
     "npm-run-all": "^4.1.5",
     "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
   },
   "overrides": {
     "diff": "^8.0.4",

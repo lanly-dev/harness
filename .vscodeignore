@@ -1,14 +1,18 @@
+// .vscodeignore - Exclude development files, include necessary source
 .vscode/**
 .vscode-test/**
 out/**
 node_modules/**
-src/**
 .gitignore
 .yarnrc
 esbuild.js
+eslint.config.mjs
+tsconfig.json
+.vscode-test.*
+*.ts
+*.map
+package.json
+package-lock.json
 vsc-extension-quickstart.md
-**/tsconfig.json
-**/eslint.config.mjs
-**/*.map
-**/*.ts
-**/.vscode-test.*
+src/extension.js
+src/extension.js.map

@@ -1,71 +1,165 @@
-# harness README
+---
+readme: written by AI
+title: DeepSeek Harness VS Code Extension
+description: Connect VS Code chat to a local DeepSeek Harness instance (offline, OpenAI-compatible)
+---
 
-This is the README for your extension "harness". After writing up a brief description, we recommend including the following sections.
+# DeepSeek Harness VS Code Extension
+
+A VS Code extension that provides a **custom language model chat provider** for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). Work completely offline by connecting to a local DeepSeek Harness instance.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- 🔌 **OpenAI-Compatible**: Connects to DeepSeek Harness's OpenAI-compatible `/v1/chat/completions` endpoint
+- 🖥️ **Local & Offline**: No external API calls - everything runs on your machine
+- 💬 **Chat Integration**: Use in VS Code Chat panel with model picker
+- ⚙️ **Configurable**: Set URL, API key, and model via VS Code settings
+- 📊 **Streaming**: Real-time response streaming in chat
 
-For example if there is an image subfolder under your extension project workspace:
+Example configuration:
 
-\!\[feature X\]\(images/feature-x.png\)
+```json
+{
+  "deepseekHarness.url": "http://localhost:3080",
+  "deepseekHarness.model": "deepseek-chat",
+  "deepseekHarness.apiKey": "your-api-key-here"
+}
+```
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## Prerequisites
 
-## Requirements
+1. **DeepSeek Harness** - Install and run a local instance
+2. **Web Service Plugin** (optional but recommended) - Provides OpenAI-compatible API
+3. **Node.js 20+** - For development (not required for end users to use the extension)
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+## Quick Start (for end users)
+
+1. **Install the extension**
+   - Clone or download the extension
+   - Open in VS Code
+   - Press `F5` to open Extension Development Host
+
+2. **Configure the provider**
+   - Open Command Palette (`Ctrl+Shift+P`)
+   - Run `DeepSeek Harness: Configure Provider URL` to set your local endpoint
+   - Run `DeepSeek Harness: Configure API Key` if authentication is required
+
+3. **Start chatting**
+   - Open the Chat panel (`Ctrl+Shift+I`)
+   - Select `DeepSeek Harness (Local)` from the model picker
+   - Start asking questions!
+
+## Setup for Local DeepSeek Harness
+
+### Step 1: Install DeepSeek Harness
+
+```bash
+# Clone the repository
+git clone https://github.com/deepseek-ai/deepseek-harness.git
+cd deepseek-harness
+
+# Install dependencies
+npm install
+
+# Build
+npm run build
+```
+
+### Step 2: Install the Web Service Plugin
+
+The Web Service plugin exposes an OpenAI-compatible API for DeepSeek Harness.
+
+```bash
+# Install the web service plugin
+dsh plugin --profile web add \
+  https://github.com/toddpan/dsh-webapi/releases/latest/download/dsh-web-service.tgz
+```
+
+> **Note**: You may need to adjust your `dsh-home` configuration depending on how you run DeepSeek Harness.
+
+### Step 3: Start DeepSeek Harness
+
+```bash
+# Start the server
+npm start
+```
+
+By default, the web service runs on `http://localhost:3080`.
+
+### Step 4: Configure VS Code
+
+Open your VS Code settings (JSON) and add:
+
+```json
+{
+  "deepseekHarness.url": "http://localhost:3080",
+  "deepseekHarness.apiKey": "",  // Leave empty if no authentication
+  "deepseekHarness.model": "deepseek-chat"
+}
+```
+
+Or use the command palette:
+- `DeepSeek Harness: Configure Provider URL`
+- `DeepSeek Harness: Configure API Key`
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `deepseekHarness.url` | string | `http://localhost:3080` | URL of the local harness server |
+| `deepseekHarness.apiKey` | string | `""` | API key for authentication |
+| `deepseekHarness.model` | string | `deepseek-chat` | Default model to use |
 
-For example:
+## Commands
 
-This extension contributes the following settings:
+| Command | Title | Description |
+|---------|-------|-------------|
+| `harness.configureProvider` | DeepSeek Harness: Configure Provider URL | Set the URL of your local harness server |
+| `harness.configureApiKey` | DeepSeek Harness: Configure API Key | Set or update the API key |
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+## How It Works (Offline Mode)
 
-## Known Issues
+1. VS Code launches the extension in the Extension Development Host
+2. The extension connects to the local DeepSeek Harness at `http://localhost:3080`
+3. User selects `DeepSeek Harness (Local)` in the model picker
+4. Chat messages are sent to the local server via OpenAI-compatible API
+5. Responses stream back in real-time via SSE (Server-Sent Events)
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Everything stays on your local machine - no cloud API calls needed!
 
-## Release Notes
+## Important Notes
 
-Users appreciate release notes as you update your extension.
+- **This extension does NOT run the models itself** - it requires a local DeepSeek Harness instance
+- **Model files must be downloaded** separately (e.g., using `huggingface-cli download` or via the Harness UI)
+- **Free and open source** - no API costs, works completely offline
+- **Personal use only** - please check the license terms for commercial use
 
-### 1.0.0
+## Troubleshooting
 
-Initial release of ...
+### Cannot connect to local server
+1. Ensure DeepSeek Harness is running: `curl http://localhost:3080/v1/models`
+2. Check the URL in settings - it must match your running instance
+3. Look for warnings in the Output panel (`Ctrl+Shift+U` → `DeepSeek Harness Provider`)
 
-### 1.0.1
+### No models appear in picker
+- Verify the server has models loaded: `curl http://localhost:3080/v1/models`
+- Ensure the server has been running long enough to load models
 
-Fixed issue #.
+### API key not working
+- Double-check the API key in settings
+- Ensure the key has privileges for the models you want to use
 
-### 1.1.0
+## Contributing
 
-Added features X, Y, and Z.
+Contributions are welcome! Please see the main repository:
 
----
+- [DeepSeek Harness GitHub](https://github.com/deepseek-ai/deepseek-harness)
 
-## Following extension guidelines
+## License
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+This extension is licensed under the MIT License.
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+- **DeepSeek Harness**: [MIT License](https://github.com/deepseek-ai/deepseek-harness/blob/main/LICENSE.md)
+- **Web Service Plugin**: [BSD-3-Clause License](https://github.com/toddpan/dsh-webapi/blob/main/LICENSE)
 
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+See individual license files for details.

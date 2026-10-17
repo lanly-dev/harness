@@ -1,26 +1,79 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { HarnessConfig, HarnessModel, HarnessChatRequest } from './types.js';
+import { HarnessSettings } from './config.js';
+import { HarnessProvider } from './provider.js';
+import { HarnessHttpClient } from './http.js';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext): void {
+  console.log('Activating Harness Provider...');
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "harness" is now active!');
+  // Get configuration
+  const config = HarnessSettings.getConfig();
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('harness.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from harness!');
-	});
+  // Validate and prompt for API key if needed
+  HarnessSettings.validateConfig().then(async (valid: boolean) => {
+    if (!valid) {
+      await HarnessSettings.promptForApiKey();
+    }
+  });
 
-	context.subscriptions.push(disposable);
+  // Create HTTP client
+  const httpClient = new HarnessHttpClient(config);
+
+  // Test connection
+  httpClient.healthCheck().then(async (healthy: boolean) => {
+    if (healthy) {
+      console.log('Connected to Harness at', config.url);
+    } else {
+      console.warn('Could not connect to Harness at', config.url);
+      vscode.window.showWarningMessage(
+        `Cannot connect to Harness at ${config.url}. ` +
+        'Please ensure the server is running.'
+      );
+    }
+  });
+
+  // Create provider
+  const provider = new HarnessProvider(config, httpClient);
+
+  // Register the provider
+  const providerRegistration = vscode.lm.registerLanguageModelChatProvider('harness', provider);
+
+  // Add command to configure provider
+  const configureCommand = vscode.commands.registerCommand('harness.configureProvider', async () => {
+    const currentConfig = HarnessSettings.getConfig();
+    const newUrl = await vscode.window.showInputBox({
+      prompt: 'Enter Harness URL',
+      placeHolder: 'http://localhost:3080',
+      value: currentConfig.url,
+    });
+
+    if (newUrl) {
+      await HarnessSettings.saveConfig({ url: newUrl });
+      // Reload provider with new config
+      const newHttpClient = new HarnessHttpClient({ ...config, url: newUrl });
+      const newProvider = new HarnessProvider({ ...config, url: newUrl }, newHttpClient);
+      vscode.lm.registerLanguageModelChatProvider('harness', newProvider);
+      vscode.window.showInformationMessage('Harness URL updated.');
+    }
+  });
+
+  // Add command to configure API key - not used in this version
+  const configureKeyCommand = vscode.commands.registerCommand('harness.configureApiKey', async () => {
+    vscode.window.showInformationMessage('API key is not supported in this version.');
+  });
+
+  // Register all disposables
+  context.subscriptions.push(
+    providerRegistration,
+    configureCommand,
+    configureKeyCommand
+  );
+
+  console.log('Harness Provider activated successfully.');
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate(): void {
+  console.log('Harness Provider deactivated.');
+}
+
